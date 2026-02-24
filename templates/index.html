@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventFlow Pro · Scheduler</title>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* (same beautiful CSS as before – no changes needed) */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(145deg, #f0f4ff 0%, #e6ecfe 100%);
+            min-height: 100vh;
+            color: #1a1f36;
+            padding: 24px;
+        }
+        .app-container { max-width: 1400px; margin: 0 auto; }
+        .navbar {
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.05), 0 0 0 1px rgba(255,255,255,0.5) inset;
+        }
+        .logo-area { display: flex; align-items: center; gap: 12px; }
+        .logo-icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, #4e54c8, #8f94fb);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 20px;
+            box-shadow: 0 10px 20px rgba(78,84,200,0.3);
+        }
+        .logo-text {
+            font-weight: 700; font-size: 1.4rem;
+            background: linear-gradient(135deg, #1e2b5e, #2b3a8c);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .nav-actions { display: flex; gap: 12px; }
+        .nav-btn {
+            background: white; border: none; padding: 10px 20px; border-radius: 40px;
+            font-weight: 600; font-size: 0.95rem;
+            display: flex; align-items: center; gap: 8px;
+            cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: all 0.2s; color: #2d3a7a;
+            text-decoration: none; border: 1px solid rgba(255,255,255,0.5);
+        }
+        .nav-btn:hover {
+            background: #f0f4ff; box-shadow: 0 10px 25px rgba(78,84,200,0.2);
+            transform: translateY(-2px);
+        }
+        .metrics-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px; margin-bottom: 30px;
+        }
+        .metric-card {
+            background: rgba(255,255,255,0.6); backdrop-filter: blur(10px);
+            border-radius: 20px; padding: 24px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.05);
+            border: 1px solid rgba(255,255,255,0.7);
+            transition: transform 0.2s;
+        }
+        .metric-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.8); }
+        .metric-title {
+            font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1px;
+            color: #5a67a0; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+        }
+        .metric-value {
+            font-size: 2.5rem; font-weight: 700; color: #1e2b5e; line-height: 1.2;
+        }
+        .metric-desc { font-size: 0.85rem; color: #6b7a9e; margin-top: 6px; }
+        .action-bar {
+            background: white; border-radius: 20px; padding: 16px 24px; margin-bottom: 30px;
+            display: flex; flex-wrap: wrap; align-items: center;
+            justify-content: space-between; gap: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.03);
+        }
+        .action-group { display: flex; gap: 10px; flex-wrap: wrap; }
+        .action-btn {
+            background: linear-gradient(135deg, #f8faff, #ffffff);
+            border: 1px solid #e0e6f0; padding: 10px 20px; border-radius: 40px;
+            font-weight: 500; font-size: 0.95rem;
+            display: inline-flex; align-items: center; gap: 8px;
+            cursor: pointer; transition: all 0.2s; color: #2d3a7a;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .action-btn.primary {
+            background: linear-gradient(135deg, #4e54c8, #6c7ae0); color: white; border: none;
+            box-shadow: 0 10px 20px rgba(78,84,200,0.25);
+        }
+        .action-btn.primary:hover {
+            background: linear-gradient(135deg, #5a60d6, #7c8af0);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px rgba(78,84,200,0.35);
+        }
+        .action-btn.danger { background: #fee; color: #c44545; border-color: #fcc; }
+        .action-btn.danger:hover { background: #fdd; }
+        .search-wrapper {
+            display: flex; align-items: center; background: white;
+            border: 1px solid #e0e6f0; border-radius: 40px; padding: 4px 4px 4px 20px;
+        }
+        .search-wrapper i { color: #9aa6c0; }
+        .search-wrapper input {
+            border: none; padding: 10px 12px; font-size: 0.95rem;
+            min-width: 250px; background: transparent; outline: none;
+        }
+        .search-wrapper button {
+            background: #4e54c8; border: none; color: white; padding: 10px 24px;
+            border-radius: 40px; font-weight: 600; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .search-wrapper button:hover { background: #3b40a0; }
+        .table-card {
+            background: white; border-radius: 28px; overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        .table-header {
+            padding: 20px 24px; border-bottom: 1px solid #edf2f7;
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;
+        }
+        .table-header h2 {
+            font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 10px; color: #1e2b5e;
+        }
+        .badge {
+            background: #e0e7ff; padding: 6px 14px; border-radius: 40px;
+            font-size: 0.85rem; font-weight: 600; color: #4e54c8;
+        }
+        .table-container { overflow-x: auto; max-height: 500px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th {
+            text-align: left; padding: 16px 20px; background: #f8faff;
+            font-weight: 600; font-size: 0.9rem; color: #4a5a8a;
+            border-bottom: 1px solid #e0e6f0; position: sticky; top: 0; z-index: 10;
+        }
+        td { padding: 16px 20px; border-bottom: 1px solid #edf2f7; color: #1f2b4e; font-size: 0.95rem; }
+        tr:hover td { background: #f5f9ff; }
+        .row-actions { display: flex; gap: 8px; }
+        .row-btn {
+            background: transparent; border: none; width: 32px; height: 32px;
+            border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
+            cursor: pointer; color: #6f7c9f; transition: all 0.2s;
+        }
+        .row-btn.edit:hover { background: #e0e7ff; color: #4e54c8; }
+        .row-btn.delete:hover { background: #fee; color: #c44545; }
+        .no-data { text-align: center; padding: 60px; color: #a0abc0; font-style: italic; }
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+            display: none; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-container {
+            background: white; border-radius: 32px; width: 90%; max-width: 500px;
+            box-shadow: 0 50px 70px -20px rgba(0,0,0,0.3);
+            animation: modalPop 0.3s ease;
+        }
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .modal-header {
+            padding: 24px 28px 16px; border-bottom: 1px solid #edf2f7;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .modal-header h3 { font-size: 1.4rem; font-weight: 600; color: #1e2b5e; }
+        .close-modal {
+            background: transparent; border: none; font-size: 1.6rem;
+            cursor: pointer; color: #9aa6c0; transition: color 0.2s;
+        }
+        .close-modal:hover { color: #c44545; }
+        .modal-body { padding: 20px 28px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block; font-weight: 500; font-size: 0.9rem;
+            color: #4a5a8a; margin-bottom: 6px;
+        }
+        .form-group input {
+            width: 100%; padding: 14px 16px; border: 2px solid #e0e6f0;
+            border-radius: 16px; font-size: 1rem; transition: border 0.2s;
+        }
+        .form-group input:focus { border-color: #4e54c8; outline: none; }
+        .modal-footer {
+            padding: 16px 28px 24px; display: flex; justify-content: flex-end; gap: 12px;
+        }
+        .modal-btn {
+            padding: 12px 28px; border-radius: 40px; font-weight: 600; border: none; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .modal-btn.cancel { background: #edf2f7; color: #4a5a8a; }
+        .modal-btn.cancel:hover { background: #e0e6f0; }
+        .modal-btn.confirm {
+            background: linear-gradient(135deg, #4e54c8, #6c7ae0); color: white;
+            box-shadow: 0 10px 20px rgba(78,84,200,0.25);
+        }
+        .modal-btn.confirm:hover {
+            transform: translateY(-2px); box-shadow: 0 15px 25px rgba(78,84,200,0.35);
+        }
+        .modal-btn.danger { background: #fee; color: #c44545; }
+        .modal-btn.danger:hover { background: #fdd; }
+        .toast {
+            position: fixed; bottom: 30px; right: 30px; background: white; border-radius: 60px;
+            padding: 16px 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            display: flex; align-items: center; gap: 12px; font-weight: 500;
+            transform: translateX(400px); transition: transform 0.3s ease; z-index: 1100;
+            border-left: 5px solid #4e54c8;
+        }
+        .toast.show { transform: translateX(0); }
+        .toast i { font-size: 1.3rem; }
+        .toast.success { border-left-color: #2ecc71; }
+        .toast.error { border-left-color: #e74c3c; }
+        .toast.warning { border-left-color: #f39c12; }
+        @media (max-width: 700px) {
+            .action-bar { flex-direction: column; align-items: stretch; }
+            .search-wrapper input { min-width: auto; }
+            .navbar { flex-direction: column; gap: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Navbar -->
+        <nav class="navbar">
+            <div class="logo-area">
+                <div class="logo-icon"><i class="fas fa-calendar-check"></i></div>
+                <span class="logo-text">EventFlow Pro</span>
+            </div>
+            <div class="nav-actions">
+                <a href="/" class="nav-btn"><i class="fas fa-list"></i> Forward</a>
+                <a href="/reverse" class="nav-btn"><i class="fas fa-exchange-alt"></i> Reverse</a>
+                <a href="/download_csv" class="nav-btn"><i class="fas fa-download"></i> CSV</a>
+            </div>
+        </nav>
+
+        <!-- Metrics – simplified to avoid errors -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-title"><i class="fas fa-calendar"></i> Total Events</div>
+                <div class="metric-value">{{ events|length }}</div>
+                <div class="metric-desc">across all dates</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title"><i class="fas fa-chair"></i> Total Seats</div>
+                <div class="metric-value">{{ events|sum(attribute='seats') }}</div>
+                <div class="metric-desc">available capacity</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title"><i class="fas fa-calendar-week"></i> Event Days</div>
+                <div class="metric-value">{{ events|map(attribute='date')|list|length }}</div>
+                <div class="metric-desc">total date entries</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title"><i class="fas fa-star"></i> Avg. Seats</div>
+                <div class="metric-value">
+                    {% if events %}
+                        {{ (events|sum(attribute='seats') / events|length)|round(1) }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </div>
+                <div class="metric-desc">per event</div>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="action-bar">
+            <div class="action-group">
+                <button class="action-btn primary" onclick="openAddModal()"><i class="fas fa-plus-circle"></i> New Event</button>
+                <button class="action-btn" onclick="openGenerateModal()"><i class="fas fa-random"></i> Generate</button>
+                <!-- Optional Clear All button – remove if you don't want it -->
+                <!-- <button class="action-btn danger" onclick="openClearModal()"><i class="fas fa-trash-alt"></i> Clear All</button> -->
+            </div>
+            <div class="search-wrapper">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search by name, date..." onkeyup="filterTable()">
+                <button onclick="filterTable()">Filter</button>
+            </div>
+        </div>
+
+        <!-- Toast for messages -->
+        <div id="toast" class="toast">
+            <i class="fas fa-info-circle"></i>
+            <span id="toastMessage"></span>
+        </div>
+
+        <!-- Events Table Card -->
+        <div class="table-card">
+            <div class="table-header">
+                <h2><i class="fas fa-list-ul"></i> Events Directory <span class="badge">{{ events|length }} entries</span></h2>
+            </div>
+            <div class="table-container">
+                <table id="eventsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Event Name</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Seats</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        {% if events %}
+                            {% for e in events %}
+                            <tr data-id="{{ e.id }}" data-name="{{ e.name }}" data-date="{{ e.date }}" data-time="{{ e.time }}" data-seats="{{ e.seats }}">
+                                <td><strong>#{{ e.id }}</strong></td>
+                                <td>{{ e.name }}</td>
+                                <td>{{ e.date }}</td>
+                                <td>{{ e.time }}</td>
+                                <td>{{ e.seats }}</td>
+                                <td class="row-actions">
+                                    <button class="row-btn edit" onclick="openEditModal('{{ e.id }}')"><i class="fas fa-edit"></i></button>
+                                    <button class="row-btn delete" onclick="openDeleteModal('{{ e.id }}')"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr><td colspan="6" class="no-data"><i class="fas fa-calendar-times"></i> No events scheduled. Click "New Event" to add one.</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+
+    <!-- Add Modal -->
+    <div id="addModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3><i class="fas fa-plus-circle" style="color:#4e54c8;"></i> Add New Event</h3>
+                <button class="close-modal" onclick="closeModal('addModal')">&times;</button>
+            </div>
+            <form method="post" action="/">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="insert">
+                    <div class="form-group">
+                        <label>Event Name</label>
+                        <input type="text" name="name" required placeholder="e.g. Team Meeting">
+                    </div>
+                    <div class="form-group">
+                        <label>Date (DD/MM/YYYY)</label>
+                        <input type="text" name="date" required placeholder="25/12/2024">
+                    </div>
+                    <div class="form-group">
+                        <label>Time (HH:MM)</label>
+                        <input type="text" name="time" required placeholder="14:30">
+                    </div>
+                    <div class="form-group">
+                        <label>Seats</label>
+                        <input type="number" name="seats" required placeholder="50">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="modal-btn cancel" onclick="closeModal('addModal')">Cancel</button>
+                    <button type="submit" class="modal-btn confirm">Create Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit" style="color:#4e54c8;"></i> Edit Event</h3>
+                <button class="close-modal" onclick="closeModal('editModal')">&times;</button>
+            </div>
+            <form method="post" action="/">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="modify">
+                    <input type="hidden" name="modify_id" id="edit_id">
+                    <div class="form-group">
+                        <label>Event Name</label>
+                        <input type="text" name="modify_name" id="edit_name" placeholder="Leave blank to keep">
+                    </div>
+                    <div class="form-group">
+                        <label>Date (DD/MM/YYYY)</label>
+                        <input type="text" name="modify_date" id="edit_date" placeholder="Leave blank to keep">
+                    </div>
+                    <div class="form-group">
+                        <label>Time (HH:MM)</label>
+                        <input type="text" name="modify_time" id="edit_time" placeholder="Leave blank to keep">
+                    </div>
+                    <div class="form-group">
+                        <label>Seats</label>
+                        <input type="number" name="modify_seats" id="edit_seats" placeholder="0 = no change">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="modal-btn cancel" onclick="closeModal('editModal')">Cancel</button>
+                    <button type="submit" class="modal-btn confirm">Update Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 style="color:#c44545;"><i class="fas fa-exclamation-triangle"></i> Confirm Deletion</h3>
+                <button class="close-modal" onclick="closeModal('deleteModal')">&times;</button>
+            </div>
+            <form method="post" action="/">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="delete_id" id="delete_id">
+                    <p>Are you sure you want to delete event <strong id="delete_id_span"></strong>? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="modal-btn cancel" onclick="closeModal('deleteModal')">Cancel</button>
+                    <button type="submit" class="modal-btn danger">Delete Permanently</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Generate Modal -->
+    <div id="generateModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3><i class="fas fa-dice-d6" style="color:#4e54c8;"></i> Generate Random Events</h3>
+                <button class="close-modal" onclick="closeModal('generateModal')">&times;</button>
+            </div>
+            <form method="post" action="/">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="generate">
+                    <div class="form-group">
+                        <label>Number of events</label>
+                        <input type="number" name="gen_count" required placeholder="e.g. 100" min="1" max="10000">
+                    </div>
+                    <p style="color:#7a88b0; font-size:0.9rem;"><i class="fas fa-info-circle"></i> This will create random sample data.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="modal-btn cancel" onclick="closeModal('generateModal')">Cancel</button>
+                    <button type="submit" class="modal-btn confirm">Generate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Optional Clear All Modal – remove if you don't have the route -->
+    <!--
+    <div id="clearModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 style="color:#c44545;"><i class="fas fa-radiation"></i> Clear All Events</h3>
+                <button class="close-modal" onclick="closeModal('clearModal')">&times;</button>
+            </div>
+            <form method="post" action="/clear">
+                <div class="modal-body">
+                    <p>This will permanently delete <strong>ALL</strong> events. Are you absolutely sure?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="modal-btn cancel" onclick="closeModal('clearModal')">Cancel</button>
+                    <button type="submit" class="modal-btn danger">Yes, Clear Everything</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    -->
+
+    <!-- Scripts -->
+    <script>
+        // Toast message handling
+        (function() {
+            const msg = "{{ message|safe }}";
+            if (msg && msg.trim() !== '') {
+                const toast = document.getElementById('toast');
+                document.getElementById('toastMessage').innerText = msg;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 5000);
+            }
+        })();
+
+        // Modal functions
+        function openModal(id) {
+            document.getElementById(id).style.display = 'flex';
+        }
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function openAddModal() {
+            openModal('addModal');
+        }
+        function openGenerateModal() {
+            openModal('generateModal');
+        }
+        // Uncomment if using clear modal
+        // function openClearModal() {
+        //     openModal('clearModal');
+        // }
+
+        function openEditModal(id) {
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            if (row) {
+                document.getElementById('edit_id').value = id;
+                document.getElementById('edit_name').value = row.dataset.name;
+                document.getElementById('edit_date').value = row.dataset.date;
+                document.getElementById('edit_time').value = row.dataset.time;
+                document.getElementById('edit_seats').value = row.dataset.seats;
+            }
+            openModal('editModal');
+        }
+
+        function openDeleteModal(id) {
+            document.getElementById('delete_id').value = id;
+            document.getElementById('delete_id_span').innerText = id;
+            openModal('deleteModal');
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal-overlay')) {
+                event.target.style.display = 'none';
+            }
+        };
+
+        // Table search filter
+        function filterTable() {
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#tableBody tr');
+            rows.forEach(row => {
+                if (row.classList.contains('no-data')) return;
+                const text = row.innerText.toLowerCase();
+                if (text.includes(input)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
